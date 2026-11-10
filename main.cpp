@@ -73,7 +73,46 @@ TSPResult solveGreedy(int n, const vector<vector<int>>& C) {
     res.min_cost = 0;
     res.is_cost_min_label = false; // Theo ví dụ đề bài, Greedy in "Chi phi: "
 
-    // TO DO:
+    vector<bool> visited(n, false);
+    res.path.reserve(n + 1);
+
+    int curr = 0; // Xuất phát cố định từ thành phố 0
+    visited[curr] = true;
+    res.path.push_back(curr);
+
+    // Lần lượt tìm n - 1 thành phố tiếp theo theo chiến lược Láng giềng gần nhất
+    for (int step = 1; step < n; ++step) {
+        int next_city = -1;
+        int min_edge = INF;
+
+        for (int j = 0; j < n; ++j) {
+            if (!visited[j] && C[curr][j] > 0 && C[curr][j] < min_edge) {
+                min_edge = C[curr][j];
+                next_city = j;
+            }
+        }
+
+        // Nếu không tìm được đỉnh tiếp theo hợp lệ
+        if (next_city == -1) {
+            res.min_cost = INF;
+            res.path.clear();
+            return res;
+        }
+
+        visited[next_city] = true;
+        res.path.push_back(next_city);
+        res.min_cost += min_edge;
+        curr = next_city;
+    }
+
+    // Quay trở về thành phố xuất phát (thành phố 0)
+    if (C[curr][0] > 0) {
+        res.min_cost += C[curr][0];
+        res.path.push_back(0);
+    } else {
+        res.min_cost = INF;
+        res.path.clear();
+    }
 
     return res;
 }
@@ -81,6 +120,12 @@ TSPResult solveGreedy(int n, const vector<vector<int>>& C) {
 // ============================================================================
 // PHẦN 4: NHẬP/XUẤT, ĐO THỜI GIAN & TÍCH HỢP)
 // ============================================================================
+
+// Kiểm tra tham số dòng lệnh có phải tên file hợp lệ không (loại bỏ '2>CON', '1>CON', '<CON' của GDB)
+bool isValidFilename(const string& arg) {
+    if (arg.empty()) return false;
+    return arg.find('>') == string::npos && arg.find('<') == string::npos;
+}
 
 // Đọc dữ liệu từ file (hoặc luồng cin)
 bool readInputFromFile(const string& filename, int& n, vector<vector<int>>& C) {
@@ -147,8 +192,8 @@ void outputResult(const TSPResult& res, ofstream& fout) {
 
 int main(int argc, char* argv[]) {
     // Hỗ trợ truyền tên file input/output qua tham số dòng lệnh để Hạnh & Da dễ chạy nhiều bộ test
-    string input_file = (argc >= 2) ? argv[1] : "input.txt";
-    string output_file = (argc >= 3) ? argv[2] : "output.txt";
+    string input_file = (argc >= 2 && isValidFilename(argv[1])) ? argv[1] : "input.txt";
+    string output_file = (argc >= 3 && isValidFilename(argv[2])) ? argv[2] : "output.txt";
 
     int n = 0;
     vector<vector<int>> C;
