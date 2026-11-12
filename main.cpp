@@ -20,21 +20,88 @@ struct TSPResult {
 };
 
 // ============================================================================
-// PHẦN 1: THUẬT TOÁN BACKTRACKING
+// PHẦN 1: THUẬT TOÁN BACKTRACKING (có cắt tỉa nhánh cận)
 // ============================================================================
-/*
- * - Input: Số thành phố n (2 <= n <= 15), ma trận chi phí C[n][n]
- * - Yêu cầu: Xuất phát từ thành phố 0, đi qua tất cả thành phố đúng 1 lần rồi quay về 0.
- * - Lưu chi phí tốt nhất vào res.min_cost và lộ trình vào res.path (gồm n + 1 phần tử, bắt đầu và kết thúc là 0).
- */
+namespace {
+class TSPBacktracking {
+private:
+    int n;
+    const vector<vector<int>>& cost;
+    vector<long long> minOut;   // minOut[i]: cạnh ra nhỏ nhất của thành phố i
+    vector<bool> visited;
+    vector<int> path;           // lộ trình hiện tại
+    vector<int> bestPath;       // lộ trình tốt nhất
+    long long bestCost;
+
+    void backtrack(int curr, int count, long long curCost, long long unvisitedMin) {
+        // Đã thăm đủ n thành phố -> quay về 0
+        if (count == n) {
+            long long total = curCost + cost[curr][0];
+            if (total < bestCost) {
+                bestCost = total;
+                bestPath = path;
+                bestPath.push_back(0);
+            }
+            return;
+        }
+
+        // Cắt tỉa 2: cận dưới
+        if (curCost + minOut[curr] + unvisitedMin >= bestCost) return;
+
+        for (int next = 0; next < n; ++next) {
+            if (visited[next]) continue;
+
+            long long newCost = curCost + cost[curr][next];
+            if (newCost >= bestCost) continue; // Cắt tỉa 1: vượt kỷ lục
+
+            visited[next] = true;
+            path.push_back(next);
+
+            backtrack(next, count + 1, newCost, unvisitedMin - minOut[next]);
+
+            path.pop_back();
+            visited[next] = false;
+        }
+    }
+
+public:
+    TSPBacktracking(int n, const vector<vector<int>>& C)
+        : n(n), cost(C), visited(n, false),
+          bestCost(numeric_limits<long long>::max()) {
+        minOut.assign(n, numeric_limits<long long>::max());
+        for (int i = 0; i < n; ++i)
+            for (int j = 0; j < n; ++j)
+                if (i != j) minOut[i] = min(minOut[i], (long long)cost[i][j]);
+    }
+
+    void solve() {
+        visited[0] = true;
+        path.push_back(0);
+
+        long long unvisitedMin = 0;
+        for (int i = 1; i < n; ++i) unvisitedMin += minOut[i];
+
+        backtrack(0, 1, 0, unvisitedMin);
+    }
+
+    long long getBestCost() const { return bestCost; }
+    const vector<int>& getBestPath() const { return bestPath; }
+};
+} // namespace
+
 TSPResult solveBacktracking(int n, const vector<vector<int>>& C) {
     TSPResult res;
     res.strategy_name = "====BACKTRACKING====";
     res.min_cost = INF;
     res.is_cost_min_label = true;
-    // TO DO:
 
-    
+    TSPBacktracking solver(n, C);
+    solver.solve();
+
+    if (solver.getBestCost() < INF) {
+        res.min_cost = (int)solver.getBestCost();
+        res.path = solver.getBestPath();   // gồm n + 1 phần tử: 0 -> ... -> 0
+    }
     return res;
 }
 
