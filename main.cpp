@@ -384,6 +384,47 @@ void outputResult(const TSPResult& res, ofstream& fout) {
     }
 }
 
+
+// Kiem tra tinh hop le cua ket qua thuat toan
+bool checkTSPResult(const TSPResult& res, int n,
+                    const vector<vector<int>>& C) {
+
+    // Kiem tra co tim duoc lo trinh hay khong
+    if (res.min_cost == INF || res.path.size() != (size_t)n + 1) {
+        return false;
+    }
+
+    // Lo trinh phai bat dau va ket thuc tai thanh pho 0
+    if (res.path.front() != 0 || res.path.back() != 0) {
+        return false;
+    }
+
+    vector<bool> visited(n, false);
+    long long totalCost = 0;
+
+    // Kiem tra cac thanh pho va tinh lai chi phi
+    for (int i = 0; i < n; ++i) {
+        int city = res.path[i];
+
+        if (city < 0 || city >= n || visited[city]) {
+            return false;
+        }
+
+        visited[city] = true;
+        totalCost += C[res.path[i]][res.path[i + 1]];
+    }
+
+    // Dam bao da tham tat ca thanh pho
+    for (int i = 0; i < n; ++i) {
+        if (!visited[i]) {
+            return false;
+        }
+    }
+
+    // Chi phi tinh lai phai bang chi phi thuat toan tra ve
+    return totalCost == res.min_cost;
+}
+
 int main(int argc, char* argv[]) {
 
     // Ham chay mot bo du lieu TSP
@@ -421,7 +462,30 @@ int main(int argc, char* argv[]) {
         TSPResult resGreedy =
             executeAndMeasure(solveGreedy, n, C);
         outputResult(resGreedy, fout);
+        // Kiem tra tinh dung dan cua 3 thuat toan
+bool checkBT = checkTSPResult(resBacktracking, n, C);
+bool checkDP = checkTSPResult(resBitmaskDP, n, C);
+bool checkGreedy = checkTSPResult(resGreedy, n, C);
 
+cout << "\n===== KIEM TRA KET QUA =====\n";
+
+cout << "Backtracking: "
+     << (checkBT ? "PASS" : "FAIL") << "\n";
+
+cout << "Bitmask DP: "
+     << (checkDP ? "PASS" : "FAIL") << "\n";
+
+cout << "Greedy: "
+     << (checkGreedy ? "PASS" : "FAIL") << "\n";
+
+// So sanh chi phi toi uu
+if (checkBT && checkDP) {
+    if (resBacktracking.min_cost == resBitmaskDP.min_cost) {
+        cout << "So sanh Backtracking va DP: PASS\n";
+    } else {
+        cout << "So sanh Backtracking va DP: FAIL\n";
+    }
+}
         fout.close();
 
         cout << "\nDa luu ket qua vao: " << output_file << "\n";
