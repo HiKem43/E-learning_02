@@ -383,54 +383,72 @@ void outputResult(const TSPResult& res, ofstream& fout) {
         fout << "Thoi gian: " << res.time_ms << " ms\n";
     }
 }
+
 int main(int argc, char* argv[]) {
-    // Hỗ trợ truyền tên file input/output qua tham số dòng lệnh để Hạnh & Da dễ chạy nhiều bộ test
-    string input_file = (argc >= 2 && isValidFilename(argv[1])) ? argv[1] : "input.txt";
-    string output_file = (argc >= 3 && isValidFilename(argv[2])) ? argv[2] : "output.txt";
 
-    int n = 0;
-    vector<vector<int>> C;
+    // Ham chay mot bo du lieu TSP
+    auto runTest = [](const string& input_file,
+                      const string& output_file) {
 
-    // Nếu không tìm thấy file input.txt, cho phép nhập trực tiếp từ bàn phím
-    if (!readInputFromFile(input_file, n, C)) {
-        cout << "[Thong bao] Khong tim thay file '" << input_file 
-             << "'. Vui long nhap n va ma tran chi phi tu ban phim:\n";
-        if (!(cin >> n) || n < 2 || n > 15) {
-            cerr << "So thanh pho n khong hop le (2 <= n <= 15)!\n";
-            return 1;
+        int n = 0;
+        vector<vector<int>> C;
+
+        cout << "\n====================================\n";
+        cout << "Dang chay: " << input_file << "\n";
+        cout << "====================================\n";
+
+        if (!readInputFromFile(input_file, n, C)) {
+            cerr << "Khong the doc file: " << input_file << "\n";
+            return;
         }
-      C.assign(n, vector<int>(n, 0));
 
-for (int i = 0; i < n; ++i) {
-    for (int j = 0; j < n; ++j) {
-        if (!(cin >> C[i][j])) {
-            cerr << "Du lieu ma tran nhap vao bi thieu hoac khong hop le!\n";
-            return 1;
+        ofstream fout(output_file);
+
+        if (!fout.is_open()) {
+            cerr << "Khong the tao file: " << output_file << "\n";
+            return;
+        }
+
+        // Chay 3 thuat toan tren cung bo du lieu
+        TSPResult resBacktracking =
+            executeAndMeasure(solveBacktracking, n, C);
+        outputResult(resBacktracking, fout);
+
+        TSPResult resBitmaskDP =
+            executeAndMeasure(solveBitmaskDP, n, C);
+        outputResult(resBitmaskDP, fout);
+
+        TSPResult resGreedy =
+            executeAndMeasure(solveGreedy, n, C);
+        outputResult(resGreedy, fout);
+
+        fout.close();
+
+        cout << "\nDa luu ket qua vao: " << output_file << "\n";
+    };
+
+    // Neu co tham so dong lenh thi chay mot bo test
+    if (argc >= 2) {
+        string input_file = argv[1];
+        string output_file =
+            (argc >= 3) ? argv[2] : "output.txt";
+
+        runTest(input_file, output_file);
+    }
+    else {
+        // Tu dong chay tat ca bo du lieu
+        int testSizes[] = {4, 6, 8, 10, 12, 14, 15};
+
+        for (int i = 0; i < 7; ++i) {
+            string input_file =
+                "test_data/input_" + to_string(testSizes[i]) + ".txt";
+
+            string output_file =
+                "output_" + to_string(testSizes[i]) + ".txt";
+
+            runTest(input_file, output_file);
         }
     }
-}
 
-// Kiem tra ma tran sau khi nhap
-if (!validateInputData(n, C)) {
-    return 1;
-}
-
-    ofstream fout(output_file);
-    if (!fout.is_open()) {
-        cerr << "Khong the tao file xuat '" << output_file << "'!\n";
-        return 1;
-    }
-
-    // Chạy độc lập 3 chiến lược trên cùng bộ dữ liệu và xuất kết quả
-    TSPResult resBacktracking = executeAndMeasure(solveBacktracking, n, C);
-    outputResult(resBacktracking, fout);
-
-    TSPResult resBitmaskDP = executeAndMeasure(solveBitmaskDP, n, C);
-    outputResult(resBitmaskDP, fout);
-
-    TSPResult resGreedy = executeAndMeasure(solveGreedy, n, C);
-    outputResult(resGreedy, fout);
-
-    fout.close();
     return 0;
 }
