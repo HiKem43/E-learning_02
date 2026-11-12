@@ -1,6 +1,6 @@
 ====BACKTRACKING====
-Chi phi toi thieu: 1000000000
-Lo trinh: 
+Chi phi toi thieu: 97
+Lo trinh: 0 1 2 3 0
 Thoi gian: 0 ms
 ====BITMASK DP====
 Chi phi toi thieu: 1000000000

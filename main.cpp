@@ -505,10 +505,10 @@ if (checkBT && checkDP) {
 
         for (int i = 0; i < 7; ++i) {
             string input_file =
-                "test_data/input_" + to_string(testSizes[i]) + ".txt";
+                "input/input_" + to_string(testSizes[i]) + ".txt";
 
             string output_file =
-                "output_" + to_string(testSizes[i]) + ".txt";
+                "output/output_" + to_string(testSizes[i]) + ".txt";
 
             runTest(input_file, output_file);
         }

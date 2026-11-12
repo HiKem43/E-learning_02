@@ -1,0 +1,12 @@
+====BACKTRACKING====
+Chi phi toi thieu: 352
+Lo trinh: 0 4 5 9 2 7 8 6 3 1 13 12 10 11 14 0
+Thoi gian: 839 ms
+====BITMASK DP====
+Chi phi toi thieu: 352
+Lo trinh: 0 14 11 10 12 13 1 3 6 8 7 2 9 5 4 0
+Thoi gian: 56 ms
+==== GREEDY ====
+Chi phi: 497
+Lo trinh: 0 4 9 5 13 8 7 2 11 14 3 6 12 10 1 0
+Thoi gian: 0 ms
