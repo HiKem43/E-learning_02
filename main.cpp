@@ -95,7 +95,7 @@ TSPResult solveBacktracking(int n, const vector<vector<int>>& C) {
     res.min_cost = INF;
     res.is_cost_min_label = true;
 
-    TSPBacktracking solver(n, C);
+TSPBacktracking solver(n, C);
     solver.solve();
 
     if (solver.getBestCost() < INF) {
@@ -104,27 +104,85 @@ TSPResult solveBacktracking(int n, const vector<vector<int>>& C) {
     }
     return res;
 }
+    vector<vector<long long>> dp(
+        totalMask, vector<long long>(n, INF_DP)
+    );
 
-// ============================================================================
-// PHẦN 2: THUẬT TOÁN BITMASK DP
-// ============================================================================
-/*
- * - Input: Số thành phố n (2 <= n <= 15), ma trận chi phí C[n][n]
- * - Yêu cầu: Sử dụng Quy hoạch động trạng thái Bitmask (dp[mask][u]) tìm hành trình ngắn nhất
- *   và truy vết (trace) lại lộ trình từ 0 -> ... -> 0.
- * - Lưu chi phí tối ưu vào res.min_cost và lộ trình vào res.path.
- */
-TSPResult solveBitmaskDP(int n, const vector<vector<int>>& C) {
-    TSPResult res;
-    res.strategy_name = "====BITMASK DP====";
-    res.min_cost = INF;
-    res.is_cost_min_label = true;
+    // Luu thanh pho truoc do de truy vet lo trinh
+    vector<vector<int>> parent(
+        totalMask, vector<int>(n, -1)
+    );
 
-    // TO DO:
-    
+    // Bat dau tai thanh pho 0
+    dp[1][0] = 0;
+
+    // Duyet cac trang thai
+    for (int mask = 1; mask < totalMask; ++mask) {
+        // Moi lo trinh deu phai bat dau tu thanh pho 0
+        if (!(mask & 1)) continue;
+
+        for (int u = 0; u < n; ++u) {
+            // Thanh pho u phai nam trong tap da tham
+            if (!(mask & (1 << u))) continue;
+
+            if (dp[mask][u] == INF_DP) continue;
+
+            // Thu di den cac thanh pho chua tham
+            for (int v = 0; v < n; ++v) {
+                if (mask & (1 << v)) continue;
+
+                int newMask = mask | (1 << v);
+                long long newCost = dp[mask][u] + C[u][v];
+
+                if (newCost < dp[newMask][v]) {
+                    dp[newMask][v] = newCost;
+                    parent[newMask][v] = u;
+                }
+            }
+        }
+    }
+
+    // Tim chi phi nho nhat khi quay ve thanh pho 0
+    int fullMask = totalMask - 1;
+    long long bestCost = INF_DP;
+    int bestLast = -1;
+
+    for (int u = 1; u < n; ++u) {
+        long long totalCost = dp[fullMask][u] + C[u][0];
+
+        if (totalCost < bestCost) {
+            bestCost = totalCost;
+            bestLast = u;
+        }
+    }
+
+    // Truy vet lo trinh neu tim duoc ket qua
+    if (bestLast != -1 && bestCost < INF_DP) {
+        res.min_cost = (int)bestCost;
+
+        vector<int> reversePath;
+        int mask = fullMask;
+        int curr = bestLast;
+
+        while (curr != 0) {
+            reversePath.push_back(curr);
+
+            int prev = parent[mask][curr];
+            mask ^= (1 << curr);
+            curr = prev;
+        }
+
+        res.path.push_back(0);
+
+        for (int i = (int)reversePath.size() - 1; i >= 0; --i) {
+            res.path.push_back(reversePath[i]);
+        }
+
+        res.path.push_back(0);
+    }
+
     return res;
 }
-
 // ============================================================================
 // PHẦN 3: THUẬT TOÁN GREEDY 
 // ============================================================================
@@ -183,7 +241,6 @@ TSPResult solveGreedy(int n, const vector<vector<int>>& C) {
 
     return res;
 }
-
 // ============================================================================
 // PHẦN 4: NHẬP/XUẤT, ĐO THỜI GIAN & TÍCH HỢP)
 // ============================================================================
@@ -256,7 +313,6 @@ void outputResult(const TSPResult& res, ofstream& fout) {
         fout << "Thoi gian: " << res.time_ms << " ms\n";
     }
 }
-
 int main(int argc, char* argv[]) {
     // Hỗ trợ truyền tên file input/output qua tham số dòng lệnh để Hạnh & Da dễ chạy nhiều bộ test
     string input_file = (argc >= 2 && isValidFilename(argv[1])) ? argv[1] : "input.txt";
