@@ -184,6 +184,93 @@ TSPBacktracking solver(n, C);
     return res;
 }
 // ============================================================================
+// PHAN 2: THUAT TOAN BITMASK DP
+// ============================================================================
+TSPResult solveBitmaskDP(int n, const vector<vector<int>>& C) {
+    TSPResult res;
+    res.strategy_name = "====BITMASK DP====";
+    res.min_cost = INF;
+    res.is_cost_min_label = true;
+
+    int totalMask = 1 << n;
+    const long long INF_DP = numeric_limits<long long>::max() / 2;
+
+    vector<vector<long long>> dp(
+        totalMask, vector<long long>(n, INF_DP)
+    );
+
+    // Luu thanh pho truoc do de truy vet lo trinh
+    vector<vector<int>> parent(
+        totalMask, vector<int>(n, -1)
+    );
+
+    // Bat dau tai thanh pho 0
+    dp[1][0] = 0;
+
+    // Duyet cac trang thai
+    for (int mask = 1; mask < totalMask; ++mask) {
+        if (!(mask & 1)) continue;
+
+        for (int u = 0; u < n; ++u) {
+            if (!(mask & (1 << u))) continue;
+            if (dp[mask][u] == INF_DP) continue;
+
+            for (int v = 0; v < n; ++v) {
+                if (mask & (1 << v)) continue;
+
+                int newMask = mask | (1 << v);
+                long long newCost = dp[mask][u] + C[u][v];
+
+                if (newCost < dp[newMask][v]) {
+                    dp[newMask][v] = newCost;
+                    parent[newMask][v] = u;
+                }
+            }
+        }
+    }
+
+    // Tim chi phi nho nhat khi quay ve thanh pho 0
+    int fullMask = totalMask - 1;
+    long long bestCost = INF_DP;
+    int bestLast = -1;
+
+    for (int u = 1; u < n; ++u) {
+        long long totalCost = dp[fullMask][u] + C[u][0];
+
+        if (totalCost < bestCost) {
+            bestCost = totalCost;
+            bestLast = u;
+        }
+    }
+
+    // Truy vet lo trinh
+    if (bestLast != -1 && bestCost < INF_DP) {
+        res.min_cost = (int)bestCost;
+
+        vector<int> reversePath;
+        int mask = fullMask;
+        int curr = bestLast;
+
+        while (curr != 0) {
+            reversePath.push_back(curr);
+
+            int prev = parent[mask][curr];
+            mask ^= (1 << curr);
+            curr = prev;
+        }
+
+        res.path.push_back(0);
+
+        for (int i = (int)reversePath.size() - 1; i >= 0; --i) {
+            res.path.push_back(reversePath[i]);
+        }
+
+        res.path.push_back(0);
+    }
+
+    return res;
+}
+// ============================================================================
 // PHẦN 3: THUẬT TOÁN GREEDY 
 // ============================================================================
 /*
@@ -251,24 +338,86 @@ bool isValidFilename(const string& arg) {
     return arg.find('>') == string::npos && arg.find('<') == string::npos;
 }
 
-// Đọc dữ liệu từ file (hoặc luồng cin)
-bool readInputFromFile(const string& filename, int& n, vector<vector<int>>& C) {
-    ifstream fin(filename);
-    if (!fin.is_open()) return false;
+// Kiem tra tinh hop le cua du lieu dau vao
+bool validateInputData(int n, const vector<vector<int>>& C) {
+    // Kiem tra so thanh pho
+    if (n < 2 || n > 15) {
+        cout << "So thanh pho n khong hop le (2 <= n <= 15)!\n";
+        return false;
+    }
 
+    // Kiem tra kich thuoc ma tran
+    if (C.size() != (size_t)n) {
+        cout << "Kich thuoc ma tran khong hop le!\n";
+        return false;
+    }
+
+    for (int i = 0; i < n; ++i) {
+        if (C[i].size() != (size_t)n) {
+            cout << "Ma tran khong du kich thuoc!\n";
+            return false;
+        }
+
+        for (int j = 0; j < n; ++j) {
+            // Duong cheo chinh phai bang 0
+            if (i == j && C[i][j] != 0) {
+                cout << "Duong cheo chinh phai bang 0!\n";
+                return false;
+            }
+
+            // Chi phi giua hai thanh pho khac nhau phai duong
+            if (i != j && C[i][j] <= 0) {
+                cout << "Chi phi khong hop le!\n";
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+// Doc du lieu tu file
+bool readInputFromFile(const string& filename, int& n,
+                       vector<vector<int>>& C) {
+    ifstream fin(filename);
+
+    if (!fin.is_open()) {
+        return false;
+    }
+
+    // Doc so thanh pho
     if (!(fin >> n) || n < 2 || n > 15) {
+        cout << "So thanh pho trong file khong hop le!\n";
         fin.close();
         return false;
     }
 
     C.assign(n, vector<int>(n, 0));
+
+    // Doc ma tran chi phi
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < n; ++j) {
-            fin >> C[i][j];
+            if (!(fin >> C[i][j])) {
+                cout << "File input bi thieu hoac co du lieu khong hop le!\n";
+                fin.close();
+                return false;
+            }
         }
     }
+
+    // Kiem tra co du lieu thua sau ma tran hay khong
+    string extra;
+
+    if (fin >> extra) {
+        cout << "File input co du lieu thua sau ma tran!\n";
+        fin.close();
+        return false;
+    }
+
     fin.close();
-    return true;
+
+    // Kiem tra tinh hop le cua ma tran
+    return validateInputData(n, C);
 }
 
 // Hàm đo thời gian thực thi của từng thuật toán
@@ -329,13 +478,21 @@ int main(int argc, char* argv[]) {
             cerr << "So thanh pho n khong hop le (2 <= n <= 15)!\n";
             return 1;
         }
-        C.assign(n, vector<int>(n, 0));
-        for (int i = 0; i < n; ++i) {
-            for (int j = 0; j < n; ++j) {
-                cin >> C[i][j];
-            }
+      C.assign(n, vector<int>(n, 0));
+
+for (int i = 0; i < n; ++i) {
+    for (int j = 0; j < n; ++j) {
+        if (!(cin >> C[i][j])) {
+            cerr << "Du lieu ma tran nhap vao bi thieu hoac khong hop le!\n";
+            return 1;
         }
     }
+}
+
+// Kiem tra ma tran sau khi nhap
+if (!validateInputData(n, C)) {
+    return 1;
+}
 
     ofstream fout(output_file);
     if (!fout.is_open()) {
